@@ -6,10 +6,14 @@ using System.Threading.Tasks;
 
 namespace MDTDemo5
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
+            string username = "张三222";
+            string caseNo = "136";
+            UserStragedy aa = new UserStragedy();
+            aa.ClassStragedyIn(username, caseNo);
         }
     }
 }
