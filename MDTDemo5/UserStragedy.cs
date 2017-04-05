@@ -46,7 +46,7 @@
             SaveDefaultData(ds, username, caseNo);
         }
         /// <summary>
-        /// 整理类策略总表和UI表，整理配置策略UI表和输出表，存入数据库
+        /// 整理类策略总表，默认配置表，UI表和默认UI表，整理配置策略UI表，默认配置表和输出表，整理执行策略UI表和默认配置表存入数据库
         /// </summary>
         /// <param name="username"></param>
         /// <param name="caseNo"></param>
