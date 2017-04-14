@@ -6,6 +6,7 @@
     using System.Data;
     using System.Data.OleDb;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
@@ -51,7 +52,7 @@
             selectSqlCommand = "SELECT * from Sequencediagram";
             DataTable dtpim4 = Process.GetTable(selectSqlCommand);//PIM4总表
             int nrdp4 = dtpim4.Rows.Count;
-            selectSqlCommand = "SELECT distinct sequencename from Acticitydiagram where usecaseobjectid='" + caseNo + "'";
+            selectSqlCommand = "SELECT distinct sequencename from Activitydiagram where usecaseobjectid='" + caseNo + "'";
             DataTable dtactive = Process.GetTable(selectSqlCommand);//用例活动图中不重复的活动图列表
 
             //遍历PIM4总表，当其在用例活动图中未出现时，删除该行
@@ -154,7 +155,7 @@
 
             //查询过程数据，查出本用例活动图中所有不重复的泳道名
             //stragedy.MySqlFhHelper(processing.SqlProcess);
-            selectSqlCommand = "SELECT distinct SequenceObjectName from acticitydiagram where usecaseobjectid='" + caseNo + "'";
+            selectSqlCommand = "SELECT distinct SequenceObjectName from activitydiagram where usecaseobjectid='" + caseNo + "'";
             DataTable table6 = Process.GetTable(selectSqlCommand);
             table6.Columns.Add("Dut_Type", typeof(string));
             table6.Columns.Add("Dut_Name", typeof(string));
@@ -316,7 +317,7 @@
 
             //在过程数据中查出用例活动图表
             //stragedy.MySqlFhHelper(processing.SqlProcess);
-            selectSqlCommand = "SELECT * from acticitydiagram where usecaseobjectid='" + caseNo + "';";
+            selectSqlCommand = "SELECT * from activitydiagram where usecaseobjectid='" + caseNo + "';";
             DataTable dtact = Process.GetTable(selectSqlCommand);
             dtact.Columns.Add("参数", typeof(string));
             dtact.Columns.Add("值", typeof(string));
@@ -432,7 +433,7 @@
             dtact.Columns.Remove("seqno");
             dtact.Columns.Remove("sequencename");
             dtact.Columns.Remove("usecaseName");
-            dtact.Columns.Remove("serial_Numbe");
+            dtact.Columns.Remove("serial_Number");
             dtact.Columns["参数"].SetOrdinal(7);
             dtact.Columns["值"].SetOrdinal(8);
             dtact.Columns["作用类"].SetOrdinal(9);
@@ -460,8 +461,8 @@
             dtaction.Columns.Add("用例编号", typeof(string));
             dtaction.Columns.Add("参数遍历", typeof(string));
             dtaction.Columns.Add("单步执行", typeof(string));
-            dtaction.Columns.Add("判断出错后，重新判断次数", typeof(string));
-            dtaction.Columns.Add("重新判断间隔时间（s）", typeof(string));
+            dtaction.Columns.Add("重新判断次数", typeof(string));
+            dtaction.Columns.Add("重新判断间隔时间", typeof(string));
             dtaction.Columns.Add("循环起点泳道", typeof(string));
             dtaction.Columns.Add("循环起点序号", typeof(string));
             dtaction.Columns.Add("循环起点活动图", typeof(string));
@@ -744,7 +745,131 @@
             Process.CloseConnection();
         }
 
-        
+/// <summary>
+/// 输出类策略.tcl
+/// </summary>
+/// <param name="username"></param>
+/// <param name="caseNo"></param>
+/// <param name="path"></param>
+        public void ExportClassStragedyTcl(string username, string caseNo,string path)
+        {
+
+            //连接过程数据库抓取类策略数据
+            DatabaseProcessing processing = new DatabaseProcessing();           
+            MySqlFhHelper Process = new MySqlFhHelper(processing.SqlProcess);
+            string selectSqlCommand = "SELECT * FROM 类策略总表 where 用户名='" + username + "' and 用例编号='" + caseNo + "';";
+            DataTable dt = Process.GetTable(selectSqlCommand);
+            FileStream fs = new FileStream(path+"ClassStragedy.tcl", FileMode.Create);
+            StreamWriter sw = new StreamWriter(fs);
+            //将字段ID的值取出来写入列表idlist
+            List<string> idlist = new List<string>();
+            string a="";
+            string b = "";
+            foreach (DataRow r in dt.Rows)
+            {
+                string id = r["id"].ToString().Trim();
+                string SourceCard = r["SourceCard"].ToString().Trim();
+                string DestCard = r["DestCard"].ToString().Trim();
+                string SourceRole = r["SourceRole"].ToString().Trim();
+                string DestRole = r["DestRole"].ToString().Trim();
+                string Start_Object_Name = r["Start_Object_Name"].ToString().Trim();
+                string End_Object_Name = r["End_Object_Name"].ToString().Trim();
+                string Dut_Type_Detial = r["Dut_Type_Detial"].ToString().Trim();
+                string Dut_Name = r["Dut_Name"].ToString().Trim();
+                //组合列表内容
+                a = a + " " + id;
+                //生成字典内容
+                b = b + " " + id + " {SourceCard " + SourceCard + " DestCard " + DestCard + " SourceRole " + SourceRole + " DestRole " + DestRole + " Start_Object_Name " + Start_Object_Name + " End_Object_Name " + End_Object_Name + " Dut_Type_Detial " + Dut_Type_Detial + " Dut_Name " + Dut_Name + "}";
+            }
+            //开始写入
+            sw.Write("set idlist  {"+a+"} \r\n");
+            sw.Write("set ClassStragedy  {" + b + "} \r\n");
+            //清空缓冲区
+            sw.Flush();
+            //关闭流
+            sw.Close();
+            fs.Close();
+        }
+
+        public void ExportConfigStragedyTcl(string username, string caseNo, string path)
+        {
+            //连接过程数据库抓取类策略数据
+            DatabaseProcessing processing = new DatabaseProcessing();
+            MySqlFhHelper Process = new MySqlFhHelper(processing.SqlProcess);
+            string selectSqlCommand = "SELECT * FROM 配置策略输出 where 用户名='" + username + "' and 用例编号='" + caseNo + "';";
+            DataTable dt = Process.GetTable(selectSqlCommand);
+            FileStream fs = new FileStream(path + "ConfigStragedy.tcl", FileMode.Create);
+            StreamWriter sw = new StreamWriter(fs);
+            //将字段ID的值取出来写入列表idlist
+            List<string> idlist = new List<string>();
+            string a = "";
+            string b = "";
+            foreach (DataRow r in dt.Rows)
+            {
+                string id = r["id"].ToString().Trim();
+                string Dut_Type_Detial = r["设备类型"].ToString().Trim();
+                string DUT_Key = r["参数"].ToString().Trim();
+                string SqeNo = r["序号"].ToString().Trim();
+                string ActName = r["步骤名称"].ToString().Trim();
+                string Value = r["值"].ToString().Trim();
+                string Class = r["作用类"].ToString().Trim();
+                string Dut_Name = r["设备名称"].ToString().Trim();
+                //组合列表内容
+                a = a + " " + id;
+                //生成字典内容
+                b = b + " " + id + " {DUT_Key " + DUT_Key + " SqeNo " + SqeNo + " ActName " + ActName + " Value " + Value + " Class " + Class + " Dut_Type_Detial " + Dut_Type_Detial + " Dut_Name " + Dut_Name + "}";
+            }
+            //开始写入
+            sw.Write("set idlist  {" + a + "} \r\n");
+            sw.Write("set ConfigStragedy  {" + b + "} \r\n");
+            //清空缓冲区
+            sw.Flush();
+            //关闭流
+            sw.Close();
+            fs.Close();
+        }
+
+        public void ExportActionStragedyTcl(string username, string caseNo, string path)
+        {
+            //连接过程数据库抓取类策略数据
+            DatabaseProcessing processing = new DatabaseProcessing();
+            MySqlFhHelper Process = new MySqlFhHelper(processing.SqlProcess);
+            string selectSqlCommand = "SELECT * FROM 执行策略 where 用户名='" + username + "' and 用例编号='" + caseNo + "';";
+            DataTable dt = Process.GetTable(selectSqlCommand);
+            FileStream fs = new FileStream(path + "ActionStragedy.tcl", FileMode.Create);
+            StreamWriter sw = new StreamWriter(fs);
+            //将字段ID的值取出来写入列表idlist
+            List<string> idlist = new List<string>();
+            string a = "";
+            string b = "";
+            foreach (DataRow r in dt.Rows)
+            {
+                string id = r["id"].ToString().Trim();
+                string Step = r["单步执行"].ToString().Trim();
+                string Key_Area = r["参数遍历"].ToString().Trim();
+                string Rejudge = r["重新判断次数"].ToString().Trim();
+                string Rejudge_Time = r["重新判断间隔时间"].ToString().Trim();
+                string Cycle_S_Type = r["循环起点泳道"].ToString().Trim();
+                string Cycle_S_No = r["循环起点序号"].ToString().Trim();
+                string Cycle_S_Name = r["循环起点活动图"].ToString().Trim();
+                string Cycle_E_Type = r["循环终点泳道"].ToString().Trim();
+                string Cycle_E_No = r["循环终点序号"].ToString().Trim();
+                string Cycle_E_Name = r["循环终点活动图"].ToString().Trim();
+                //组合列表内容
+                a = a + " " + id;
+                //生成字典内容
+                b = b + " " + id + " { Step" + Step + " Key_Area " + Key_Area + " Rejudge " + Rejudge + " Rejudge_Time " + Rejudge_Time + " Cycle_S_Type " + Cycle_S_Type + " Cycle_S_No " + Cycle_S_No + " Cycle_S_Name " + Cycle_S_Name + " Cycle_E_Type " + Cycle_E_Type + " Cycle_E_No " + Cycle_E_No + " Cycle_E_Name " + Cycle_E_Name+"}";
+            }
+            //开始写入
+            sw.Write("set idlist  {" + a + "} \r\n");
+            sw.Write("set ActionStragedy  {" + b + "} \r\n");
+            //清空缓冲区
+            sw.Flush();
+            //关闭流
+            sw.Close();
+            fs.Close();
+        }
+
     }
 }
 
